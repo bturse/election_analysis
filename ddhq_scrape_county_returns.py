@@ -1,28 +1,37 @@
 # libraries
 import sys
+import argparse
 import json
 import requests
 import pandas as pd
 from datetime import datetime
 import pandasql as ps
+import addfips
 
 def main():
-    ddhq_results = pd.DataFrame(columns=['state_code', 'county_name', 'party_name',
+
+    ddhq_results = pd.DataFrame(columns=['state_code', 'fips', 'county_name', 'party_name',
                                          'first_name', 'last_name', 'office',
                                          'incumbent', 'votes'])
-    if len(sys.argv) >= 2:
-        states = sys.argv[1:]
-    else:
-        states = get_state_abbr()
+
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument('--dest', type=str)
+    arg_parser.add_argument('--states', nargs='*', type=str)
+    args = arg_parser.parse_args()
+
+    # destination to save scrape result
+    states = args.states
     
     for state in states:
         ddhq_state_scrape = ddhq_scrape()
         ddhq_state_scrape.set_ddhq_results_tbl(state)
         ddhq_results = pd.concat([ddhq_results, ddhq_state_scrape.ddhq_results_tbl], 
-                                 axis=0)
+                                 axis=0, ignore_index=True)
 
     dstamp = datetime.today().strftime("%Y%m%d")
     ddhq_results['datestamp'] = dstamp
+
+    ddhq_results.to_json(args.dest)
 
 def get_state_abbr():
     """
@@ -40,7 +49,7 @@ def get_state_abbr():
 class ddhq_scrape:
     def __init__(self):
         self.state_json = None
-        self.counties_tbl = pd.DataFrame(columns=['ddhq_county_id', 'county_name'])
+        self.counties_tbl = pd.DataFrame(columns=['fips', 'ddhq_county_id', 'county_name'])
         self.candidates_tbl = pd.DataFrame(columns=['race_id', 'office', 'state_code', 'cand_id', 
                                                     'party_name', 'first_name', 'last_name', 'incumbent'])
         self.votes_tbl = pd.DataFrame(columns=['race_id', 'cand_id', 'ddhq_county_id', 'votes'])
@@ -71,7 +80,11 @@ class ddhq_scrape:
             except KeyError:
                 county_results = race['vcuResults']
             for county in county_results['counties']:
+                # use addfips api to generate fips codes
+                addf = addfips.AddFIPS()
+                fips = addf.get_county_fips(county = county['county'], state = state)
                 new_row = [[
+                    fips,
                     county['id'],
                     county['county']
                 ]]
@@ -112,16 +125,16 @@ class ddhq_scrape:
             except KeyError:
                 counties = race['vcuResults']['counties']
             for county in counties:
-                for key in county['votes']:
+                for cand_id in county['votes']:
                     new_row = [[
                         race['race_id'],
-                        key,
+                        cand_id,
                         county['id'],
-                        county['votes'][key]
+                        county['votes'][cand_id]
                     ]]
-                self.votes_tbl = self.votes_tbl.append(
-                    pd.DataFrame(new_row, columns=self.votes_tbl.columns), 
-                    ignore_index=True)
+                    self.votes_tbl = self.votes_tbl.append(
+                        pd.DataFrame(new_row, columns=self.votes_tbl.columns), 
+                        ignore_index=True)
 
     def set_ddhq_results_tbl(self, state):
         if self.state_json == None:
@@ -141,6 +154,7 @@ class ddhq_scrape:
         self.ddhq_results_tbl = ps.sqldf("""
             SELECT
               cand.state_code
+            , county.fips
             , county.county_name
             , cand.party_name
             , cand.first_name
