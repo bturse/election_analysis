@@ -266,3 +266,5 @@ ridge_coef = pd.DataFrame(zip(X.columns, pipe.named_steps.ridge.coef_),
                           columns=['var', 'coef']) 
 acs_metadata = get_acs_metadata().filter(['var', 'label', 'concept'])
 ridge_coef = ridge_coef.merge(acs_metadata)
+
+ridge_coef.to_csv('r_split_acs_coef.csv')
