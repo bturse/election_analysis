@@ -107,3 +107,12 @@ class query:
         # this method is a little hacky, but avoids having to study all acs variables
         self.acs_df.dropna(axis=1, thresh=len(self.acs_df)/10, inplace=True)
 
+def merge_acs_df(acs_df_list=[]):
+    """ Merge American Community Survey API query dataframes.
+
+        Args:
+            acs_df_list (list of pandas.DataFrame) dataframes to merge
+        Returns:
+            pandas.DataFrame merged on shared column names
+    """
+    return reduce(lambda x, y: pd.merge(x, y), acs_df_list)
