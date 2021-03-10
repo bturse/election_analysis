@@ -1,9 +1,13 @@
-import requests
+
+
+
+#####################################################################################
+##################################     Modules     ##################################
+#####################################################################################
+
 import geopandas as gpd
 import pandas as pd
-import numpy as np
 import query_acs
-from functools import reduce
 from sklearn.pipeline import Pipeline
 from sklearn.impute import KNNImputer
 from sklearn.linear_model import RidgeCV
@@ -28,29 +32,35 @@ def get_precinct_results(curl_results=True):
 
     return precinct_results.filter(['PRECINCT_ID', 'fips', 'dem_advantage_pe'])
 
+
 #####################################################################################
 #########################     American Community Survey     #########################
 #####################################################################################
-acs_groups=['DP02','DP03','DP04','DP05']
-acs_df_list = []
-for group in acs_groups:
-    acs_query = query_acs.query(year='2019', period='acs5', table='profile',
-                                get_acs=group, for_acs='county', in_acs='state:*')
 
-precinct_results = get_precinct_results(curl_results=False)
+def get_acs_vars(acs_groups):
+    acs_vars_list = []
+    for group in acs_groups:
+        acs_query = query_acs.query(year='2019', period='acs5', table='profile',
+                                    get_acs=group, for_acs='county', in_acs='state:*')
+        acs_query.select_acs_pe()
+        acs_vars_list.append(acs_query.acs_df)
+    acs_vars = query_acs.merge_acs_df(acs_vars_list)
+    acs_vars['fips'] = acs_vars.GEO_ID.str[-5:]
+    acs_vars.drop('GEO_ID', axis=1, inplace=True)
+    return acs_vars
 
-modeling_df = precinct_results.merge(acs_pe)
 
-X = modeling_df.drop(['PRECINCT_ID', 'fips', 'dem_advantage_pe'], axis=1)
-y = modeling_df['dem_advantage_pe']
+#####################################################################################
+################################     Regression     #################################
+#####################################################################################
 
+def get_modeling_tables():
+    acs_vars = get_acs_vars(
+        acs_groups=['group(DP02)','group(DP03)','group(DP04)','group(DP05)'])
+    precinct_results = get_precinct_results(curl_results=False)
+    modeling_df = precinct_results.merge(acs_vars)
+    X = modeling_df.drop(['PRECINCT_ID', 'fips', 'dem_advantage_pe'], axis=1)
+    y = modeling_df['dem_advantage_pe']
+    return (X, y)
 
-alphas=(10**np.linspace(-2, 5, 100)).tolist()
-pipe = Pipeline([('imputer', KNNImputer()), ('ridge', RidgeCV(alphas))])
-pipe.fit(X, y)
-
-# join ridge coefficients and acs metadata to access descriptive variable names
-ridge_coef = pd.DataFrame(zip(X.columns, pipe.named_steps.ridge.coef_),
-                          columns=['var', 'coef']) 
-acs_metadata = get_acs_metadata().filter(['var', 'label', 'concept'])
-ridge_coef = ridge_coef.merge(acs_metadata)
+X, y = get_modeling_tables()

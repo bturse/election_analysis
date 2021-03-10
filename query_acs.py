@@ -12,6 +12,7 @@ import os
 import requests
 import json
 import pandas as pd
+from functools import reduce
 
 class query:
     def __init__(self, year=None, period=None, table=None, 
@@ -107,7 +108,7 @@ class query:
         # this method is a little hacky, but avoids having to study all acs variables
         self.acs_df.dropna(axis=1, thresh=len(self.acs_df)/10, inplace=True)
 
-def merge_acs_df(acs_df_list=[]):
+def merge_acs_df(acs_df_list=None):
     """ Merge American Community Survey API query dataframes.
 
         Args:
