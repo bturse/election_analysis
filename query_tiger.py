@@ -4,7 +4,7 @@ from datetime import date
 from functools import reduce
 
 # tiget_state_support_dict: whether or not each geographic level support state fips codes
-tiget_state_support_dict = {
+tiger_state_support_dict = {
     'ADDR': True, 'ADDRFEAT': True, 'ADDRFN': True, 'AIANNH': False, 'AITSN': False,
     'ANRC': False, 'AREALM': True, 'AREAWATER': True, 'BG': True, 'CBSA': False, 'CD': True,
     'CNECTA': False, 'COASTLINE': False, 'CONCITY': True, 'COUNTY': True, 'COUSUB': True,
@@ -17,7 +17,7 @@ tiget_state_support_dict = {
     'ZCTA5': False}
 
 def get_tiger_shapes(geography=None, state_fips=None, year=str(date.today().year - 1)):
-    """ Get urls for TIGER shape zip files
+    """ Get geographic shapes from census.gov
 
         Args:
             geography (str) Geographic level. Available options here: https://www2.census.gov/geo/tiger/TIGER2020/2020_TL_Shapefiles_File_Name_Definitions.pdf
@@ -30,7 +30,7 @@ def get_tiger_shapes(geography=None, state_fips=None, year=str(date.today().year
         Example:
             get_tiger_shapes('CD', '55')
     """
-    if not tiget_state_support_dict[geography]:
+    if not tiger_state_support_dict[geography] and state_fips:
         raise Exception('geography does not support state_fips')
     tiger_df_list=[]
     geo_tbl_url = 'https://www2.census.gov/geo/tiger/TIGER' + str(year) + '/' + geography.upper() + '/'
