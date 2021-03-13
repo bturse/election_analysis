@@ -17,7 +17,7 @@ tiget_state_support_dict = {
     'ZCTA5': False}
 
 def get_tiger_shapes(geography=None, state_fips=None, year=str(date.today().year - 1)):
-    """ Get urls for TIGER shape zip files
+    """ Get geographic shapes from census.gov
 
         Args:
             geography (str) Geographic level. Available options here: https://www2.census.gov/geo/tiger/TIGER2020/2020_TL_Shapefiles_File_Name_Definitions.pdf
