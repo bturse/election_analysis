@@ -13,5 +13,5 @@ Results in r_split_acs_coef.csv.
 Formatted here:
 https://docs.google.com/spreadsheets/d/1QF7j1G2X5aJryVVVbBy8uApYxnqfteekpUQXTLT6WrM/edit?usp=sharing
 
-## NYT Precinct
+## nyt_precinct.py
 Analyze precinct level presidential returns from NYT.
