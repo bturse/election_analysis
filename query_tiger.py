@@ -5,16 +5,18 @@ from functools import reduce
 
 # tiget_state_support_dict: whether or not each geographic level support state fips codes
 tiger_state_support_dict = {
-    'ADDR': True, 'ADDRFEAT': True, 'ADDRFN': True, 'AIANNH': False, 'AITSN': False,
-    'ANRC': False, 'AREALM': True, 'AREAWATER': True, 'BG': True, 'CBSA': False, 'CD': True,
-    'CNECTA': False, 'COASTLINE': False, 'CONCITY': True, 'COUNTY': True, 'COUSUB': True,
-    'CSA': False, 'EDGES': True, 'ELSD': True, 'ESTATE': False, 'FACES': True, 'FACESAH': True,
-    'FACESAL': True, 'FACESMIL': False, 'FEATNAMES': True, 'LINEARWATER': True, 'METDIV': False,
-    'MIL': False, 'NECTA': False, 'NECTADIV': False, 'PLACE': True, 'POINTLM': True, 
-    'PRIMARYROADS': False, 'PRISECROADS': True, 'PUMA': True, 'RAILS': False, 'ROADS': True,
-    'SCSD': True, 'SLDL': True, 'SLDU': True, 'STATE': True, 'SUBBARRIO': True, 'TABBLOCK': True,
-    'TABBLOCK20': True, 'TBG': False, 'TRACT': True, 'TTRACT': False, 'UAC': False, 'UNSD': True,
-    'ZCTA5': False}
+    'ADDR': True, 'ADDRFEAT': True, 'ADDRFN': True, 'AIANNH': False, 'AITSN':
+    False, 'ANRC': False, 'AREALM': True, 'AREAWATER': True, 'BG': True,
+    'CBSA': False, 'CD': True, 'CNECTA': False, 'COASTLINE': False,
+    'CONCITY': True, 'COUNTY': True, 'COUSUB': True, 'CSA': False, 'EDGES':
+    True, 'ELSD': True, 'ESTATE': False, 'FACES': True, 'FACESAH': True,
+    'FACESAL': True, 'FACESMIL': False, 'FEATNAMES': True, 'LINEARWATER':
+    True, 'METDIV': False, 'MIL': False, 'NECTA': False, 'NECTADIV': False,
+    'PLACE': True, 'POINTLM': True, 'PRIMARYROADS': False, 'PRISECROADS':
+    True, 'PUMA': True, 'RAILS': False, 'ROADS': True, 'SCSD': True, 'SLDL':
+    True, 'SLDU': True, 'STATE': True, 'SUBBARRIO': True, 'TABBLOCK': True,
+    'TABBLOCK20': True, 'TBG': False, 'TRACT': True, 'TTRACT': False, 'UAC':
+    False, 'UNSD': True, 'ZCTA5': False}
 
 def get_tiger_shapes(geography=None, state_fips=None, year=str(date.today().year - 1)):
     """ Get geographic shapes from census.gov
@@ -43,4 +45,6 @@ def get_tiger_shapes(geography=None, state_fips=None, year=str(date.today().year
         tiger_df.rename(columns={tiger_df.columns[0]: 'GEOID'}, inplace=True)
         tiger_df_list.append(tiger_df)
     tiger_shapes = reduce(lambda x, y: pd.merge(x, y, on='GEOID'), tiger_df_list)
-    return(tiger_shapes[tiger_shapes.GEOID.str.contains('^'+state_fips)].reset_index(drop=True))
+    if state_fips: 
+        return(tiger_shapes[tiger_shapes.GEOID.str.contains('^'+state_fips)].reset_index(drop=True))
+    else: return tiger_shapes
