@@ -22,7 +22,7 @@ class query:
         self.year     = year   # ACS year
         self.period   = period # ACS period (ex: 'acs5' or 'acs1')
         self.table    = table  # ACS table (ex: 'profile' or 'subject')
-        self.acs_url  = None   # base ACS api url, generated from year, period, and table
+        self.base_url  = None   # base ACS api url, generated from year, period, and table
 
         # ACS API parameters
         self.get_acs = get_acs # Census API get param
@@ -35,33 +35,19 @@ class query:
         self.acs_df   = None # dataframe to save as JSON
         self.metadata_df = pd.DataFrame(columns=['var', 'label', 'dtype', 'concept'])
  
-    def set_acs_url(self): 
-        """ Generate base URL for ACS API call
-        """
-        base_list = [self.year, 'acs', self.period, self.table]
-        base_list = [item for item in base_list if item]
-        self.acs_url = 'https://api.census.gov/data/' + '/'.join(base_list)
-          
-    def set_acs_head(self):
-        """ Send HEAD request to ACS API.
+    def get_acs_df(self):
+        """ Send HEAD request to ACS API and return the url
 
             This is an inexpensive request that will generate a URL for the GET call.
         """
-        if self.acs_url is None: self.set_acs_url()
-        payload = {
-            'get': self.get_acs,
-            'for': self.for_acs,
-            'in':  self.in_acs,
-            'key': self.api_key}
-        self.acs_head = requests.head(self.acs_url, params=payload)
+        base_list = [self.year, 'acs', self.period, self.table]
+        base_list = [item for item in base_list if item]
+        base_url = 'https://api.census.gov/data/' + '/'.join(base_list)
+        payload = {'get': self.get_acs, 'for': self.for_acs, 
+                   'in': self.in_acs, 'key': self.api_key}
+        r = requests.get(base_url, params=payload)
+        return pd.DataFrame(r.json()[1:], columns=r.json()[0])
 
-    def set_acs_df(self): 
-        """ Save GET call as pandas.DataFrame.
-        """
-        if self.acs_head is None: self.set_acs_head()
-        r = requests.get(self.acs_head.url)
-        self.acs_df = pd.DataFrame(r.json()[1:], columns=r.json()[0])
-    
     def set_metadata_df(self):
         """ Get descriptive variale names and conceptss for ACS variables.
 
@@ -82,6 +68,7 @@ class query:
                     ignore_index=True)
             except KeyError:
                 pass
+        return self.metadata_df
 
     def select_acs_pe(self):
         """ Select float percentage ACS variables
@@ -107,6 +94,7 @@ class query:
         # and reduce the ammount of error introduced through imputation
         # this method is a little hacky, but avoids having to study all acs variables
         self.acs_df.dropna(axis=1, thresh=len(self.acs_df)/10, inplace=True)
+        return self.acs_df
 
 def merge_acs_df(acs_df_list=None):
     """ Merge American Community Survey API query dataframes.
